@@ -43,8 +43,14 @@ class AuthScreenState extends State<AuthScreen> {
       _error = '';
     });
 
-    final username = '${_subscriptionIdController.text};${_usernameController.text}';
-    final password = _passwordController.text; // No escaping needed; Base64 handles it
+    // Trim whitespace from all input fields
+    final trimmedSubscriptionId = _subscriptionIdController.text.trim();
+    final trimmedUsername = _usernameController.text.trim();
+    final trimmedPassword = _passwordController.text.trim();
+
+    // Combine SUBSCRIPTIONID and USERNAME with semicolon
+    final username = '$trimmedSubscriptionId;$trimmedUsername';
+    final password = trimmedPassword; // No escaping needed; Base64 handles it
     String basicAuth = base64Encode(utf8.encode('$username:$password'));
     final url = Uri.parse('https://acas.acuant.net/oauth/token');
     debugPrint('Requesting token with URL: $url, Raw Username: $username, Raw Password: $password, Basic Auth: Basic $basicAuth');
