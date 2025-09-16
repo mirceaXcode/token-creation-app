@@ -1,4 +1,4 @@
-name: Build Windows App
+\name: Build Windows App
 
 on:
   push:
@@ -15,8 +15,10 @@ jobs:
         with:
           channel: 'stable'
       - run: flutter pub get
+      - run: flutter config --enable-windows-desktop
       - run: flutter build windows --release
       - uses: actions/upload-artifact@v4
         with:
           name: windows-app
-          path: build/windows/runner/Release/
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error # Fail if no files are found
