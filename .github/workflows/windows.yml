@@ -21,4 +21,4 @@ jobs:
         with:
           name: windows-app
           path: build/windows/x64/runner/Release/
-          if-no-files-found: error # Fail if no files are found
+          if-no-files-found: error # Fail if no files are found again
