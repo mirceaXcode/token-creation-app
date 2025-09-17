@@ -34,6 +34,7 @@ class AuthScreenState extends State<AuthScreen> {
   final _subscriptionIdController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _expiresInController = TextEditingController();
   String _token = '';
   String _error = '';
 
@@ -47,13 +48,34 @@ class AuthScreenState extends State<AuthScreen> {
     final trimmedSubscriptionId = _subscriptionIdController.text.trim();
     final trimmedUsername = _usernameController.text.trim();
     final trimmedPassword = _passwordController.text.trim();
+    final trimmedExpiresIn = _expiresInController.text.trim();
 
-    // Combine SUBSCRIPTIONID and USERNAME with semicolon
+    if (trimmedSubscriptionId.isEmpty || trimmedUsername.isEmpty || trimmedPassword.isEmpty) {
+      setState(() {
+        _error = 'All fields (Subscription ID, Username, Password) are required';
+      });
+      return;
+    }
+
+    // Validate and parse expires_in
+    int? expiresIn;
+    if (trimmedExpiresIn.isNotEmpty) {
+      expiresIn = int.tryParse(trimmedExpiresIn);
+      if (expiresIn == null || expiresIn <= 0) {
+        setState(() {
+          _error = 'Expires In must be a positive number of seconds';
+        });
+        return;
+      }
+    } else {
+      expiresIn = 7200; // Default to 2 hours (7200 seconds) if empty
+    }
+
     final username = '$trimmedSubscriptionId;$trimmedUsername';
-    final password = trimmedPassword; // No escaping needed; Base64 handles it
+    final password = trimmedPassword;
     String basicAuth = base64Encode(utf8.encode('$username:$password'));
     final url = Uri.parse('https://acas.acuant.net/oauth/token');
-    debugPrint('Requesting token with URL: $url, Raw Username: $username, Raw Password: $password, Basic Auth: Basic $basicAuth');
+    debugPrint('Requesting token with URL: $url, Raw Username: $username, Raw Password: $password, Expires In: $expiresIn, Basic Auth: Basic $basicAuth');
     try {
       final response = await http.post(
         url,
@@ -72,7 +94,7 @@ class AuthScreenState extends State<AuthScreen> {
           'grant_type': 'client_credentials',
           'audience': 'https://assureid.acuant.net',
           'scope': 'RESTRICTED ACCESS',
-          'expires_in': '7200',
+          'expires_in': expiresIn.toString(),
         }.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&'),
       ).timeout(const Duration(seconds: 10), onTimeout: () {
         throw Exception('Connection timed out');
@@ -128,6 +150,11 @@ class AuthScreenState extends State<AuthScreen> {
               decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
+            TextField(
+              controller: _expiresInController,
+              decoration: const InputDecoration(labelText: 'Expires In (seconds)'),
+              keyboardType: TextInputType.number, // Suggests numeric input
+            ),
             const SizedBox(height: 20),
             ElevatedButton(onPressed: _login, child: const Text('Get Bearer Token')),
             const SizedBox(height: 20),
@@ -169,6 +196,7 @@ class AuthScreenState extends State<AuthScreen> {
     _subscriptionIdController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
+    _expiresInController.dispose();
     super.dispose();
   }
 }
